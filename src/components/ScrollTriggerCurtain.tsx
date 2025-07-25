@@ -55,41 +55,48 @@ const ScrollTriggerCurtain: React.FC<ScrollTriggerCurtainProps> = ({
       }
     });
 
-    // Create ScrollTrigger for each section with improved timing
+    // Create ScrollTrigger for each section with fixed timing
     sectionElements.forEach((section, index) => {
       if (!section) return;
 
       const sectionConfig = sections[index];
-      const prevSectionsHeight = sections.slice(0, index).reduce((total, sec) => {
-        return total + parseInt(sec.height);
-      }, 0);
       
-      // More precise trigger points
-      const triggerStart = index === 0 ? 'top bottom' : `${prevSectionsHeight}vh bottom`;
-      const triggerEnd = `+=${parseInt(sectionConfig.height)}vh`;
+      // Calculate precise trigger points
+      const sectionHeight = parseInt(sectionConfig.height.replace('vh', ''));
+      const triggerPoint = index * window.innerHeight; // Start when previous section should be covered
       
       ScrollTrigger.create({
-        trigger: section,
-        start: triggerStart,
-        end: triggerEnd,
-        scrub: 0.5, // Slower, smoother scrubbing
-        animation: gsap.to(section, {
-          y: '0vh', // Precise viewport positioning
-          ease: 'none'
-        }),
-        onUpdate: (self) => {
-          // Ensure section stays on top during animation
-          const currentZ = 10 + index;
-          if (section.style.zIndex !== currentZ.toString()) {
-            section.style.zIndex = currentZ.toString();
+        trigger: container, // Use container as trigger, not individual sections
+        start: `${triggerPoint}px top`,
+        end: `${triggerPoint + (sectionHeight * window.innerHeight / 100)}px top`,
+        scrub: 0.8, // Slightly slower for smoother effect
+        animation: gsap.fromTo(section, 
+          {
+            y: '100vh', // Start completely below
+            opacity: 1
+          },
+          {
+            y: '0vh', // Move to cover viewport
+            opacity: 1,
+            ease: 'none'
           }
+        ),
+        onEnter: () => {
+          // Ensure section is on top when entering
+          section.style.zIndex = (20 + index).toString();
+          console.log(`Section ${index + 1} entering`);
         },
-        onToggle: (self) => {
-          if (self.isActive) {
-            // Ensure this section is visible and properly layered
-            section.style.visibility = 'visible';
-            section.style.opacity = '1';
-          }
+        onLeave: () => {
+          // Keep section visible when leaving upward
+          console.log(`Section ${index + 1} leaving`);
+        },
+        onEnterBack: () => {
+          // Handle backward scroll
+          section.style.zIndex = (20 + index).toString();
+        },
+        onLeaveBack: () => {
+          // Reset when scrolling back up
+          console.log(`Section ${index + 1} leaving back`);
         }
       });
     });
@@ -152,18 +159,20 @@ const ScrollTriggerCurtain: React.FC<ScrollTriggerCurtainProps> = ({
               style={{
                 height: section.height,
                 background: section.background,
-                zIndex: 10 + index,
-                transform: 'translate3d(0, 100vh, 0)', // Hardware acceleration
-                willChange: 'transform' // Optimize for animations
+                zIndex: 20 + index, // Higher z-index range
+                transform: 'translate3d(0, 100vh, 0)', // Start below viewport
+                willChange: 'transform',
+                visibility: 'visible', // Always visible
+                opacity: 1
               }}
             >
               <div className="relative w-full h-full">
-                {/* Background overlay to ensure complete coverage */}
+                {/* Solid background layer for complete coverage */}
                 <div 
                   className="absolute inset-0 w-full h-full"
                   style={{ 
                     background: section.background,
-                    zIndex: -1 
+                    zIndex: 1
                   }}
                 />
                 
@@ -177,8 +186,10 @@ const ScrollTriggerCurtain: React.FC<ScrollTriggerCurtainProps> = ({
         ))}
       </div>
 
-      {/* Final spacer to ensure proper scroll ending */}
-      <div className="w-full h-screen bg-background" />
+      {/* Final spacer dengan background solid */}
+      <div className="w-full h-screen" style={{ 
+        background: sections[sections.length - 1]?.background || 'hsl(var(--background))'
+      }} />
     </div>
   );
 };
