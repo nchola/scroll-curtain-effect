@@ -35,41 +35,60 @@ const ScrollTriggerCurtain: React.FC<ScrollTriggerCurtainProps> = ({
     // Clear any existing ScrollTrigger instances
     ScrollTrigger.getAll().forEach(trigger => trigger.kill());
 
-    // Set initial states
-    gsap.set(hero, { zIndex: 1 });
+    // Set initial states with proper layering
+    gsap.set(hero, { 
+      zIndex: 1,
+      position: 'relative'
+    });
     
     sectionElements.forEach((section, index) => {
       if (section) {
         gsap.set(section, { 
-          zIndex: index + 2,
-          y: '100%' // Start from bottom
+          zIndex: 10 + index, // Start from z-10 to ensure proper layering
+          y: '100vh', // Start completely below viewport
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: sections[index].height
         });
       }
     });
 
-    // Create ScrollTrigger for each section
+    // Create ScrollTrigger for each section with improved timing
     sectionElements.forEach((section, index) => {
       if (!section) return;
 
       const sectionConfig = sections[index];
-      const sectionHeight = sectionConfig.height;
+      const prevSectionsHeight = sections.slice(0, index).reduce((total, sec) => {
+        return total + parseInt(sec.height);
+      }, 0);
       
-      // Calculate trigger point based on previous sections
-      const triggerStart = index === 0 ? 'top bottom' : `${index * 100}vh bottom`;
+      // More precise trigger points
+      const triggerStart = index === 0 ? 'top bottom' : `${prevSectionsHeight}vh bottom`;
+      const triggerEnd = `+=${parseInt(sectionConfig.height)}vh`;
       
       ScrollTrigger.create({
         trigger: section,
         start: triggerStart,
-        end: `+=${sectionHeight}`,
-        scrub: 1, // Smooth scrubbing
+        end: triggerEnd,
+        scrub: 0.5, // Slower, smoother scrubbing
         animation: gsap.to(section, {
-          y: '0%', // Slide up to cover hero
+          y: '0vh', // Precise viewport positioning
           ease: 'none'
         }),
+        onUpdate: (self) => {
+          // Ensure section stays on top during animation
+          const currentZ = 10 + index;
+          if (section.style.zIndex !== currentZ.toString()) {
+            section.style.zIndex = currentZ.toString();
+          }
+        },
         onToggle: (self) => {
-          // Optional: Add any side effects when section enters/exits
           if (self.isActive) {
-            console.log(`Section ${index + 1} is covering hero`);
+            // Ensure this section is visible and properly layered
+            section.style.visibility = 'visible';
+            section.style.opacity = '1';
           }
         }
       });
@@ -126,24 +145,40 @@ const ScrollTriggerCurtain: React.FC<ScrollTriggerCurtainProps> = ({
               style={{ height: section.height }}
             />
             
-            {/* Actual section content */}
+            {/* Actual section content with improved layering */}
             <div
               ref={el => sectionsRef.current[index] = el}
               className="fixed top-0 left-0 w-full overflow-hidden"
               style={{
                 height: section.height,
                 background: section.background,
-                zIndex: index + 2
+                zIndex: 10 + index,
+                transform: 'translate3d(0, 100vh, 0)', // Hardware acceleration
+                willChange: 'transform' // Optimize for animations
               }}
             >
-              {section.content}
+              <div className="relative w-full h-full">
+                {/* Background overlay to ensure complete coverage */}
+                <div 
+                  className="absolute inset-0 w-full h-full"
+                  style={{ 
+                    background: section.background,
+                    zIndex: -1 
+                  }}
+                />
+                
+                {/* Section content */}
+                <div className="relative z-10 w-full h-full">
+                  {section.content}
+                </div>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
       {/* Final spacer to ensure proper scroll ending */}
-      <div className="w-full h-screen" />
+      <div className="w-full h-screen bg-background" />
     </div>
   );
 };

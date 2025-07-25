@@ -3,6 +3,7 @@ import HeroSection from '@/components/HeroSection';
 import ServiceSection from '@/components/ServiceSection';
 import PortfolioSection from '@/components/PortfolioSection';
 import ContactSection from '@/components/ContactSection';
+import ScrollDebugger from '@/components/ScrollDebugger';
 
 const Index = () => {
   // Define sections with different heights and content
@@ -10,19 +11,19 @@ const Index = () => {
     {
       id: 'services',
       height: '150vh', // Taller section for services
-      background: 'linear-gradient(180deg, hsl(215 25% 6%) 0%, hsl(215 25% 10%) 100%)',
+      background: 'linear-gradient(180deg, hsl(215 25% 4%) 0%, hsl(215 25% 8%) 100%)',
       content: <ServiceSection />
     },
     {
       id: 'portfolio',
       height: '100vh', // Standard height
-      background: 'linear-gradient(180deg, hsl(215 25% 8%) 0%, hsl(215 25% 12%) 100%)',
+      background: 'linear-gradient(180deg, hsl(215 25% 6%) 0%, hsl(215 25% 10%) 100%)',
       content: <PortfolioSection />
     },
     {
       id: 'about',
       height: '80vh', // Shorter section
-      background: 'linear-gradient(180deg, hsl(215 25% 10%) 0%, hsl(215 25% 14%) 100%)',
+      background: 'linear-gradient(180deg, hsl(215 25% 8%) 0%, hsl(215 25% 12%) 100%)',
       content: (
         <div className="flex items-center justify-center h-full">
           <div className="text-center max-w-4xl mx-auto px-6">
@@ -68,6 +69,8 @@ const Index = () => {
         heroContent={<HeroSection />}
         sections={sections}
       />
+      {/* Remove this debugger in production */}
+      <ScrollDebugger />
     </div>
   );
 };
